@@ -1,0 +1,18 @@
+
+version: 2
+
+models:
+  - name: profile
+    description: "Data Profile"
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        tests:
+          - unique
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - table_schema
+            - table_name
+            - field

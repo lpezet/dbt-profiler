@@ -1,0 +1,22 @@
+#!/bin/bash
+
+DIR=`dirname -- "$0"`
+
+DEFAULT_ENV="$DIR/.env"
+STAGE=${STAGE:-}
+
+if [ -z "${STAGE}" ]; then
+ ENV=${DEFAULT_ENV}
+else
+ ENV=${DEFAULT_ENV}.${STAGE}
+fi
+
+if [ ! -f "${ENV}" ]; then
+ echo "ERROR: could not find env file [$ENV]. Exiting."
+ exit 1
+else
+ echo "Using env file [$ENV]..."
+fi
+
+# NB: using current dir to load profiles.yml file by specifying DBT_PROFILES_DIR here...
+env DBT_PROFILES_DIR=$DIR $(cat $ENV | xargs) dbt $@

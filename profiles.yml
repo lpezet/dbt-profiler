@@ -1,0 +1,12 @@
+profiler:
+  target: dev
+  outputs:
+    dev:
+      type: mysql
+      server: 172.28.128.1
+      port: 3306
+      database: dbt_profiler
+      schema: dbt_profiler
+      username: "{{env_var('MYSQL_USER')}}"
+      password: "{{env_var('MYSQL_PWD')}}"
+      ssl_disabled: True

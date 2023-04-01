@@ -1,0 +1,6 @@
+dbt-core==1.1.4
+dbt-mysql==1.1.0
+MarkupSafe==2.0.1
+pre-commit==3.2.1
+sqlfluff==2.0.2
+sqlfluff-templater-dbt==2.0.2
