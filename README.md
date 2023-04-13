@@ -1,5 +1,7 @@
 # Setup
 
+Run `setup.sh` or follow these steps:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate

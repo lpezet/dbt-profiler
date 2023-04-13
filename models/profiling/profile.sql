@@ -1,7 +1,7 @@
 {{
     config(
         materialized=var("profile_materialization"),
-        unique_key = ["table_schema", "table_name", "field"]
+        unique_key = "table_schema, table_name, field"
     )
 }}
 /*  */

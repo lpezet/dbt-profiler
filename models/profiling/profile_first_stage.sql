@@ -1,3 +1,6 @@
+-- This first stage was created because MySQL would evaluate all expressions within an IF() function.
+-- So IF(@is_numeric = 1, AVG(field1), NULL) doesn't really work as it will run the AVG() even if @is_numeric = 0 it seems.
+
 {%- set col_query -%}
 select
     column_name
@@ -7,6 +10,9 @@ where
     1=1
     AND table_name = '{{ var("table_name") }}'
     AND table_schema = '{{ var("table_schema") }}'
+    {%- if var("table_columns") != '' -%}
+    AND column_name IN ({{ var("table_columns") }})
+    {%- endif -%}
 {%- endset -%}
 
 {%- set cols = run_query(col_query) -%}
