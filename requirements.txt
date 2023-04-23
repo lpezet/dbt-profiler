@@ -1,4 +1,4 @@
-git+https://github.com/lpezet/dbt-mysql.git@1.4.latest#egg=dbt-mysql-lpezet
+git+https://github.com/lpezet/dbt-mysql.git@v1.4.6#egg=dbt-mysql-lpezet
 
 dbt-core==1.4.6
 #dbt-mysql==1.1.0
