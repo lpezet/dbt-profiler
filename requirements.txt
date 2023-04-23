@@ -1,5 +1,7 @@
-dbt-core==1.1.4
-dbt-mysql==1.1.0
+git+https://github.com/lpezet/dbt-mysql.git@1.4.latest#egg=dbt-mysql-lpezet
+
+dbt-core==1.4.6
+#dbt-mysql==1.1.0
 MarkupSafe==2.0.1
 pre-commit==3.2.1
 sqlfluff==2.0.2
