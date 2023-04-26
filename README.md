@@ -9,7 +9,7 @@ python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install -r requirements.txt
 ```
 
-## Usage
+# Usage
 
 The dbt wrapper `dbtw` was created to load environment variable when running dbt.
 Instead of doing:
@@ -35,19 +35,102 @@ Specify the table schema and table name either in profiles.yml or from command l
 ```
 
 
-### Using the starter project
+# Examples
 
-Try running the following commands:
-- dbt run
-- dbt test
+## MySQL sakila database
+
+This will create data profile for MySQL's [sakila dataset](https://dev.mysql.com/doc/sakila/en/).
+
+### Download and load dataset
+
+```bash
+curl https://downloads.mysql.com/docs/sakila-db.tar.gz -o /tmp/sakila-db.tar.gz
+tar zxf /tmp/sakila-db.tar.gz -C /tmp/
+# create sakila schema, along with any UDF and UDP
+cat /tmp/sakila-db/sakila-schema.sql | mysql -u root -p
+cat /tmp/sakila-db/sakila-data.sql | mysql -u root -p
+```
+
+### Setup .env
+
+```bash
+# if you do not have an .env file yet...
+cp .env.sample .env
+# then edit .env and specify username, password, host, and port in there
+```
+
+### Run dbt-profiler
+
+The following will profile every column in every table in the `sakila` schema:
+```bash
+./dbtw run --target dev --vars '{"table_schema":"sakila","profile_materialization":"table"}'
+```
+
+Takes about 30 seconds on my (Windows WSL2) i7 3GHz 4-core CPU with 32GB of RAM.
 
 
-### Resources:
-- Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
-- Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
-- Join the [chat](https://community.getdbt.com/) on Slack for live discussions and support
-- Find [dbt events](https://events.getdbt.com) near you
-- Check out [the blog](https://blog.getdbt.com/) for the latest news on dbt's development and best practices
+### Results
 
+Finally, simply query the `dbt_profiler.profile` table:
 
-https://serge-g.medium.com/dynamic-sql-pivots-with-dbt-dea16d7b9b63
+```SQL
+SELECT * FROM dbt_profiler.profile
+```
+
+Extract of results:
+![sakila results](static/dbt_profiled_sakila.png)
+
+## Employees database
+
+This will create data profile for "[300,000 employee records with 2.8 million salary entries](https://github.com/datacharmer/test_db)".
+
+### Download and load dataset
+
+```bash
+mkdir /tmp/test_db
+git clone https://github.com/datacharmer/test_db.git /tmp/test_db/
+cd /tmp/test_db
+mysql -u root -p < employees.sql
+```
+
+### Setup .env
+
+```bash
+# if you do not have an .env file yet...
+cp .env.sample .env
+# then edit .env and specify username, password, host, and port in there
+```
+
+### Run dbt-profiler
+
+The following will profile every column in every table in the `employees` schema:
+```bash
+./dbtw run --target dev --vars '{"table_schema":"employees","profile_materialization":"table"}'
+```
+
+Takes about 4 minutes on my (Windows WSL2) i7 3GHz 4-core CPU with 32GB of RAM.
+
+### Results
+
+Finally, simply query the `dbt_profiler.profile` table:
+
+```SQL
+SELECT * FROM dbt_profiler.profile
+```
+
+Extract of results:
+![employees results](static/dbt_profiled_employees.png)
+
+# Known limitations
+
+* This is MySQL, not Big Query, Snowflake, etc. Queries use MySQL specific keywords and are unlikely to work against other engines.
+* Every care was taken to ensure the final schema can hold any length of data, but the schema is figured out with the data, so incremental profiling may fail (e.g. dbt created table with VARCHAR(9) and new incremental profiling is bringing values greater than that)
+* Logic is inefficient (at the moment) for bigger databases with lots of tables and lots of columns. The CTE can get quite huge and MySQL might fail in the end with big datasets.
+
+# References
+
+<a id="ref-1">[1]</a> DataPatterns, https://github.com/hpcc-systems/DataPatterns
+
+<a id="ref-2">[2]</a> Iterate over all rows and columns in dbt jinja, https://stackoverflow.com/questions/74898764/iterate-over-all-rows-and-columns-in-dbt-jinja
+
+<a id="ref-3">[3]</a> Dynamic Sql Pivots with dbt, https://serge-g.medium.com/dynamic-sql-pivots-with-dbt-dea16d7b9b63

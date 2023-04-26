@@ -3,10 +3,11 @@ profiler:
   outputs:
     dev:
       type: mysql
-      server: 172.28.128.1
-      port: 3306
+      server: "{{env_var('MYSQL_HOST')}}"
+      port: "{{env_var('MYSQL_PORT') | int}}"
       database: dbt_profiler
       schema: dbt_profiler
       username: "{{env_var('MYSQL_USER')}}"
       password: "{{env_var('MYSQL_PWD')}}"
       ssl_disabled: True
+      charset: "utf8mb4"
