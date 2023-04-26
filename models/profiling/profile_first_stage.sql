@@ -3,6 +3,7 @@
 
 {%- set col_query -%}
 select
+    table_schema,
     table_name,
     column_name
 from
@@ -31,103 +32,105 @@ WITH
         SELECT '{{ var("table_schema") }}' as table_schema, '{{ var("table_name") }}' as table_name,  '{{ var("table_columns") }}' as table_columns, {{items | length}} as items
     )
 {%- for i in items %}
-    , `stats_f_r_{{i[0]}}_{{i[1]}}_modes` AS (
+    , `stats_f_r_{{i[1]}}_{{i[2]}}_modes` AS (
         select
             CAST(
                 CONCAT(
-                    SUBSTRING(`{{i[1]}}`, 1, 100),
-                    IF(LENGTH(`{{i[1]}}`) > 100, '...', '')
+                    SUBSTRING(`{{i[2]}}`, 1, 100),
+                    IF(LENGTH(`{{i[2]}}`) > 100, '...', '')
                     ) 
                 AS CHAR) as __n,
             COUNT(*) as __f -- frequency
-        from `{{ var("table_schema") }}`.`{{i[0]}}`
+        from `{{i[0]}}`.`{{i[1]}}`
         group by 1
         -- HAVING __f > 1
         order by 2 DESC
     )
-    , `stats_f_r_{{i[0]}}_{{i[1]}}_quartiles` AS (
+    , `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` AS (
         select
             CAST(
                 CONCAT(
-                    SUBSTRING(`{{i[1]}}`, 1, 100),
-                    IF(LENGTH(`{{i[1]}}`) > 100, '...', '')
+                    SUBSTRING(`{{i[2]}}`, 1, 100),
+                    IF(LENGTH(`{{i[2]}}`) > 100, '...', '')
                     )  
                 AS CHAR) as __n,
             ROW_NUMBER() OVER() as __rn
-        from `{{ var("table_schema") }}`.`{{i[0]}}`
+        from `{{i[0]}}`.`{{i[1]}}`
         order by 1
     )
-    , `patterns_{{i[0]}}_{{i[1]}}` AS (
+    , `patterns_{{i[1]}}_{{i[2]}}` AS (
         select
             CONCAT(
                 SUBSTRING(
                     REGEXP_REPLACE(
                         REGEXP_REPLACE(
                             REGEXP_REPLACE(
-                            `{{i[1]}}`,
+                            `{{i[2]}}`,
                             '[0-9]', '9' COLLATE utf8mb4_0900_ai_ci),
                         '[A-Z]', 'A' COLLATE utf8mb4_0900_ai_ci), 
                     '[a-z]', 'a' COLLATE utf8mb4_0900_ai_ci),
                     1, 100
                 ),
-                IF(LENGTH(`{{i[1]}}`) > 100, '...', '')
+                IF(LENGTH(`{{i[2]}}`) > 100, '...', '')
             ) as pattern,
             COUNT(*) as f
-        from  `{{ var("table_schema") }}`.`{{i[0]}}`
+        from  `{{i[0]}}`.`{{i[1]}}`
         group by 1
     )
 {%- endfor %}
 -- SELECT second
 select
-    '' as _is_numeric, -- user variables
-    '' as _number_of_vals, -- user variables
-    '' as _number_of_rows, -- user variables
-    '' as _lower_quartile, -- user variables
-    '' as _upper_quartile, -- user variables
-    '' as _middle, -- user variables
-    '__dummy__' as tbl,
-    '__dummy__' as col,
+    CAST(0 AS UNSIGNED) as _is_numeric,
+    CAST(0 AS UNSIGNED) as _number_of_vals,
+    CAST(0 AS UNSIGNED) as _number_of_rows,
+    CAST(0.0 AS DECIMAL) as _lower_quartile,
+    CAST(0.0 AS DECIMAL) as _upper_quartile,
+    CAST(0.0 AS DECIMAL) as _middle,
+    '__dummy__123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456' as sch,
+    '__dummy__123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456' as tbl,
+    '__dummy__123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456' as col,
     0 as rec_count,
     0 as fill_count,
     0 as fill_rate,
     0 as cardinality,
-    '' as modes,
+    '__dummy__123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456' as modes,
     0 as min_length,
     0 as max_length,
     0 as ave_length,
     0 as is_numeric,
-    NULL as numeric_min,
-    NULL as numeric_max,
-    NULL as numberic_mean,
-    NULL as numeric_std_dev,
-    NULL as numeric_lower_quartile,
-    NULL as numeric_median,
-    NULL as numeric_upper_quartile,
+    CAST(NULL AS DECIMAL) as numeric_min,
+    CAST(NULL AS DECIMAL) as numeric_max,
+    CAST(NULL AS DECIMAL) as numberic_mean,
+    CAST(NULL AS DECIMAL) as numeric_std_dev,
+    CAST(NULL AS DECIMAL) as numeric_lower_quartile,
+    CAST(NULL AS DECIMAL) as numeric_median,
+    CAST(NULL AS DECIMAL) as numeric_upper_quartile,
     '' COLLATE utf8mb4_0900_ai_ci as popular_patterns,
     '' COLLATE utf8mb4_0900_ai_ci as rare_patterns
 {%- for i in items %}
 union all
 select
-@is_numeric := (SUM(REGEXP_LIKE(`{{i[1]}}`, '^[-+]?[0-9]+(\.[0-9]+)?$')) = COUNT(*)) as _is_numeric,
-@number_of_vals := SUM(IF(`{{i[1]}}` IS NULL OR CAST(`{{i[1]}}` AS CHAR) = '', 0, 1)) as _number_of_vals,
+@is_numeric := (SUM(REGEXP_LIKE(`{{i[2]}}`, '^[-+]?[0-9]+(\.[0-9]+)?$')) = COUNT(*)) as _is_numeric,
+@number_of_vals := SUM(IF(`{{i[2]}}` IS NULL OR CAST(`{{i[2]}}` AS CHAR) = '', 0, 1)) as _number_of_vals,
 @number_of_rows := COUNT(*) as _number_of_rows,
 @lower_quartile := ROUND(@number_of_rows * 0.25) as _lower_quartile,
 @upper_quartile := ROUND(@number_of_rows * 0.75) as _upper_quartile,
 @middle := ROUND(@number_of_rows * 0.5) as _middle,
-'{{i[0]}}' as tbl,
-'{{i[1]}}' as col,
+'{{i[0]}}' as sch,
+'{{i[1]}}' as tbl,
+'{{i[2]}}' as col,
 CAST(@number_of_rows AS UNSIGNED) as rec_count,
 CAST(@number_of_vals as UNSIGNED) as fill_count,
 ROUND(@number_of_vals / @number_of_rows, 2) as fill_rate,
-COUNT(DISTINCT `{{i[1]}}`) as cardinality,
+COUNT(DISTINCT `{{i[2]}}`) as cardinality,
 /* cardinality_breakdown */
-(select GROUP_CONCAT(__n SEPARATOR ', ') from (SELECT __n FROM `stats_f_r_{{i[0]}}_{{i[1]}}_modes` LIMIT 5) S) as modes,
-(SELECT min(length(CAST(`{{i[1]}}` AS CHAR)))) as min_length, -- WARNING: problem with TEXT?
-(SELECT max(length(CAST(`{{i[1]}}` AS CHAR)))) as max_length, -- WARNING: problem with TEXT?
-(SELECT avg(length(CAST(`{{i[1]}}` AS CHAR)))) as ave_length, -- WARNING: problem with TEXT?
+(select GROUP_CONCAT(__n SEPARATOR ', ') from (SELECT __n FROM `stats_f_r_{{i[1]}}_{{i[2]}}_modes` LIMIT 5) S) as modes,
+(SELECT min(length(CAST(`{{i[2]}}` AS CHAR)))) as min_length, -- WARNING: problem with TEXT?
+(SELECT max(length(CAST(`{{i[2]}}` AS CHAR)))) as max_length, -- WARNING: problem with TEXT?
+(SELECT avg(length(CAST(`{{i[2]}}` AS CHAR)))) as ave_length, -- WARNING: problem with TEXT?
 @is_numeric as is_numeric,
--- IF(@is_numeric = 1, MIN(`{{i[1]}}`), NULL) as numeric_min,
--- IF(@is_numeric = 1, MAX(`{{i[1]}}`), NULL) as numeric_max,
+-- IF(@is_numeric = 1, MIN(`{{i[2]}}`), NULL) as numeric_min,
+-- IF(@is_numeric = 1, MAX(`{{i[2]}}`), NULL) as numeric_max,
 CAST(NULL AS DECIMAL(65,30)) as numeric_min,
 CAST(NULL AS DECIMAL(65,30)) as numeric_max,
 
@@ -139,16 +142,16 @@ CAST(NULL as DECIMAL(65, 30))  as nmeric_std_dev,
 -- IF(@is_numeric = 1, AVG({{i}}), NULL) as numeric_mean,
 -- IF(@is_numeric = 1, STDDEV_POP({{i}}), NULL) as numeric_std_dev,
 
-IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[0]}}_{{i[1]}}_quartiles` WHERE __rn = @lower_quartile), NULL) as numeric_lower_quartile,
-IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[0]}}_{{i[1]}}_quartiles` WHERE __rn = @middle), NULL) as numeric_median, -- not accurate implementation
-IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[0]}}_{{i[1]}}_quartiles` WHERE __rn = @upper_quartile), NULL) as numeric_upper_quartile,
+IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @lower_quartile), NULL) as numeric_lower_quartile,
+IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @middle), NULL) as numeric_median, -- not accurate implementation
+IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @upper_quartile), NULL) as numeric_upper_quartile,
 
 -- doing SUBSTRING() here as it can lead to "1260 (HY000): Row 2 was cut by GROUP_CONCAT()"
-(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[0]}}_{{i[1]}}` ORDER BY f DESC, pattern LIMIT 5) S) COLLATE utf8mb4_0900_ai_ci as popular_patterns,
-(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[0]}}_{{i[1]}}` ORDER BY f ASC, pattern LIMIT 5) S) COLLATE utf8mb4_0900_ai_ci as rare_patterns
+(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f DESC, pattern LIMIT 5) S) COLLATE utf8mb4_0900_ai_ci as popular_patterns,
+(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f ASC, pattern LIMIT 5) S) COLLATE utf8mb4_0900_ai_ci as rare_patterns
 
 
 -- correlations
 from
-    `{{ var("table_schema") }}`.`{{i[0]}}`
+    `{{i[0]}}`.`{{i[1]}}`
 {%- endfor %}

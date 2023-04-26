@@ -8,6 +8,7 @@
 
 {%- set num_query -%}
 select
+    sch,
     tbl,
     col
 from
@@ -30,13 +31,12 @@ with
         from
             {{ ref('profile_first_stage') }}
         where
-            col != '__dummy__'
+            col NOT LIKE '__dummy__%'
     ),
     results AS (
         select
-            '{{ var("table_schema") }}' as table_schema,
+            sch as table_schema,
             tbl as table_name,
-            -- 'TODO' as table_name,
             col as field,
             rec_count,
             fill_count,
@@ -63,8 +63,8 @@ with
         {%- for i in items %}
         union all
         select
-            '{{ var("table_schema") }}' as table_schema,
-            '{{ i[0] }}' as table_name,
+            '{{ i[0] }}' as table_schema,
+            '{{ i[1] }}' as table_name,
             col as field,
             rec_count,
             fill_count,
@@ -75,12 +75,10 @@ with
             max_length,
             ave_length,
             is_numeric,
-            (SELECT CAST(MIN(`{{i[1]}}`) AS DECIMAL(65, 30)) FROM `{{ var("table_schema") }}`.`{{ i[0] }}`) as numeric_min,
-            (SELECT CAST(MAX(`{{i[1]}}`) AS DECIMAL(65, 30)) FROM `{{ var("table_schema") }}`.`{{ i[0] }}`) as numeric_max,
-            -- numeric_min,
-            -- numeric_max,
-            (SELECT CAST(AVG(`{{i[1]}}`) AS DECIMAL(65, 30)) FROM `{{ var("table_schema") }}`.`{{ i[0] }}`) as numeric_mean,
-            (SELECT CAST(STDDEV_POP(`{{i[1]}}`) AS DECIMAL(65, 30)) FROM `{{ var("table_schema") }}`.`{{ i[0] }}`) as numeric_std_dev, 
+            (SELECT CAST(MIN(`{{i[2]}}`) AS DECIMAL(65, 30)) FROM `{{ i[0] }}`.`{{ i[1] }}`) as numeric_min,
+            (SELECT CAST(MAX(`{{i[2]}}`) AS DECIMAL(65, 30)) FROM `{{ i[0] }}`.`{{ i[1] }}`) as numeric_max,
+            (SELECT CAST(AVG(`{{i[2]}}`) AS DECIMAL(65, 30)) FROM `{{ i[0] }}`.`{{ i[1] }}`) as numeric_mean,
+            (SELECT CAST(STDDEV_POP(`{{i[2]}}`) AS DECIMAL(65, 30)) FROM `{{ i[0] }}`.`{{ i[1] }}`) as numeric_std_dev, 
             numeric_lower_quartile,
             numeric_median,
             numeric_upper_quartile,
@@ -90,8 +88,9 @@ with
             source_data
         where
             1=1
-            AND tbl = '{{i[0]}}'
-            AND col = '{{i[1]}}'
+            AND sch = '{{i[0]}}'
+            AND tbl = '{{i[1]}}'
+            AND col = '{{i[2]}}'
         {%- endfor %}
     )
 select
