@@ -121,11 +121,16 @@ SELECT * FROM dbt_profiler.profile
 Extract of results:
 ![employees results](static/dbt_profiled_employees.png)
 
+# Known limitations
+
+* This is MySQL, not Big Query, Snowflake, etc. Queries use MySQL specific keywords and are unlikely to work against other engines.
+* Every care was taken to ensure the final schema can hold any length of data, but the schema is figured out with the data, so incremental profiling may fail (e.g. dbt created table with VARCHAR(9) and new incremental profiling is bringing values greater than that)
+* Logic is inefficient (at the moment) for bigger databases with lots of tables and lots of columns. The CTE can get quite huge and MySQL might fail in the end with big datasets.
 
 # References
 
-https://github.com/hpcc-systems/DataPatterns
+<a id="ref-1">[1]</a> DataPatterns, https://github.com/hpcc-systems/DataPatterns
 
-https://stackoverflow.com/questions/74898764/iterate-over-all-rows-and-columns-in-dbt-jinja
+<a id="ref-2">[2]</a> Iterate over all rows and columns in dbt jinja, https://stackoverflow.com/questions/74898764/iterate-over-all-rows-and-columns-in-dbt-jinja
 
-https://serge-g.medium.com/dynamic-sql-pivots-with-dbt-dea16d7b9b63
+<a id="ref-3">[3]</a> Dynamic Sql Pivots with dbt, https://serge-g.medium.com/dynamic-sql-pivots-with-dbt-dea16d7b9b63
