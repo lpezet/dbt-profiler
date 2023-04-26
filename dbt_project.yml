@@ -42,7 +42,7 @@ models:
 vars:
   profile_materialization: incremental
   table_schema: please_define_me
-  table_name: please_define_me_as_well
+  table_name: ''
   # set/leave empty for all columns
   table_columns: ''
 
