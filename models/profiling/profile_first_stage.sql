@@ -33,7 +33,12 @@ WITH
 {%- for i in items %}
     , `stats_f_r_{{i[0]}}_{{i[1]}}_modes` AS (
         select
-            '{{i[1]}}' as __n,
+            CAST(
+                CONCAT(
+                    SUBSTRING(`{{i[1]}}`, 1, 100),
+                    IF(LENGTH(`{{i[1]}}`) > 100, '...', '')
+                    ) 
+                AS CHAR) as __n,
             COUNT(*) as __f -- frequency
         from `{{ var("table_schema") }}`.`{{i[0]}}`
         group by 1
@@ -42,7 +47,12 @@ WITH
     )
     , `stats_f_r_{{i[0]}}_{{i[1]}}_quartiles` AS (
         select
-            '{{i[1]}}' as __n,
+            CAST(
+                CONCAT(
+                    SUBSTRING(`{{i[1]}}`, 1, 100),
+                    IF(LENGTH(`{{i[1]}}`) > 100, '...', '')
+                    )  
+                AS CHAR) as __n,
             ROW_NUMBER() OVER() as __rn
         from `{{ var("table_schema") }}`.`{{i[0]}}`
         order by 1
@@ -58,7 +68,7 @@ WITH
                             '[0-9]', '9' COLLATE utf8mb4_0900_ai_ci),
                         '[A-Z]', 'A' COLLATE utf8mb4_0900_ai_ci), 
                     '[a-z]', 'a' COLLATE utf8mb4_0900_ai_ci),
-                    0, 100
+                    1, 100
                 ),
                 IF(LENGTH(`{{i[1]}}`) > 100, '...', '')
             ) as pattern,
