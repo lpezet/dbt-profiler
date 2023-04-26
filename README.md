@@ -124,7 +124,7 @@ Extract of results:
 # Known limitations
 
 * This is MySQL, not Big Query, Snowflake, etc. Queries use MySQL specific keywords and are unlikely to work against other engines.
-* Every care was taken to ensure the final schema can hold any length of data, but the schema is figured out with the data, so incremental profiling may fail (e.g. dbt created table with VARCHAR(9) and new incremental profiling is bringing values greater than that)
+* Every care was taken to ensure the final schema can hold any length of data, but the schema is figured out with the data, so incremental profiling may fail (e.g. dbt created column with VARCHAR(9) and new incremental profiling is bringing values greater than that)
 * Logic is inefficient (at the moment) for bigger databases with lots of tables and lots of columns. The CTE can get quite huge and MySQL might fail in the end with big datasets.
 
 # References
