@@ -35,19 +35,48 @@ Specify the table schema and table name either in profiles.yml or from command l
 ```
 
 
-### Using the starter project
+### Example
 
-Try running the following commands:
-- dbt run
-- dbt test
+This will create data profile for MySQL's [sakila dataset](https://dev.mysql.com/doc/sakila/en/).
+
+#### Download and load sakila dataset
+
+```bash
+curl https://downloads.mysql.com/docs/sakila-db.tar.gz -o /tmp/sakila-db.tar.gz
+tar zxf /tmp/sakila-db.tar.gz -C /tmp/
+# create sakila schema, along with any UDF and UDP
+cat /tmp/sakila-db/sakila-schema.sql | mysql -u root -p
+cat /tmp/sakila-db/sakila-data.sql | mysql -u root -p
+```
+
+#### Setup .env
+
+```bash
+cp .env.sample .env
+# edit .env and specify username, password, host, and port in there
+```
+
+#### Run dbt-profiler
 
 
-### Resources:
-- Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
-- Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
-- Join the [chat](https://community.getdbt.com/) on Slack for live discussions and support
-- Find [dbt events](https://events.getdbt.com) near you
-- Check out [the blog](https://blog.getdbt.com/) for the latest news on dbt's development and best practices
+The following will profile every column in every table in the `sakila` schema:
+```bash
+ ./dbtw run --target dev --vars '{"table_schema":"sakila","profile_materialization":"table"}'
+```
 
+#### Results
 
+Finally, simply query the `dbt_profiler.profile` table:
+
+```SQL
+SELECT * FROM dbt_profiler.profile
+```
+
+Extract of results:
+![sakila results](static/dbt_profiled_sakila.png)
+
+# References
+
+https://github.com/hpcc-systems/DataPatterns
+https://stackoverflow.com/questions/74898764/iterate-over-all-rows-and-columns-in-dbt-jinja
 https://serge-g.medium.com/dynamic-sql-pivots-with-dbt-dea16d7b9b63
