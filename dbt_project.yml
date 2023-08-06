@@ -45,4 +45,7 @@ vars:
   table_name: ''
   # set/leave empty for all columns
   table_columns: ''
+  max_char_length: 100
+  max_patterns: 5
+  max_modes: 5
 

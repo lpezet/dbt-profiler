@@ -1,5 +1,9 @@
 -- This first stage was created because MySQL would evaluate all expressions within an IF() function.
 -- So IF(@is_numeric = 1, AVG(field1), NULL) doesn't really work as it will run the AVG() even if @is_numeric = 0 it seems.
+{%- set MAX_CHAR_LENGTH = var("max_char_length") -%}
+{%- set MAX_PATTERNS = var("max_patterns") -%}
+{%- set MAX_MODES = var("max_modes") -%}
+
 
 {%- set col_query -%}
 select
@@ -36,8 +40,8 @@ WITH
         select
             CAST(
                 CONCAT(
-                    SUBSTRING(`{{i[2]}}`, 1, 100),
-                    IF(LENGTH(`{{i[2]}}`) > 100, '...', '')
+                    SUBSTRING(`{{i[2]}}`, 1, {{MAX_CHAR_LENGTH}}),
+                    IF(LENGTH(`{{i[2]}}`) > {{MAX_CHAR_LENGTH}}, '...', '')
                     ) 
                 AS CHAR) as __n,
             COUNT(*) as __f -- frequency
@@ -50,8 +54,8 @@ WITH
         select
             CAST(
                 CONCAT(
-                    SUBSTRING(`{{i[2]}}`, 1, 100),
-                    IF(LENGTH(`{{i[2]}}`) > 100, '...', '')
+                    SUBSTRING(`{{i[2]}}`, 1, {{MAX_CHAR_LENGTH}}),
+                    IF(LENGTH(`{{i[2]}}`) > {{MAX_CHAR_LENGTH}}, '...', '')
                     )  
                 AS CHAR) as __n,
             ROW_NUMBER() OVER() as __rn
@@ -69,9 +73,9 @@ WITH
                             '[0-9]', '9' COLLATE utf8mb4_0900_ai_ci),
                         '[A-Z]', 'A' COLLATE utf8mb4_0900_ai_ci), 
                     '[a-z]', 'a' COLLATE utf8mb4_0900_ai_ci),
-                    1, 100
+                    1, {{MAX_CHAR_LENGTH}}
                 ),
-                IF(LENGTH(`{{i[2]}}`) > 100, '...', '')
+                IF(LENGTH(`{{i[2]}}`) > {{MAX_CHAR_LENGTH}}, '...', '')
             ) as pattern,
             COUNT(*) as f
         from  `{{i[0]}}`.`{{i[1]}}`
@@ -121,10 +125,10 @@ select
 '{{i[2]}}' as col,
 CAST(@number_of_rows AS UNSIGNED) as rec_count,
 CAST(@number_of_vals as UNSIGNED) as fill_count,
-ROUND(@number_of_vals / @number_of_rows, 2) as fill_rate,
+ROUND(@number_of_vals / @number_of_rows, 4) as fill_rate,
 COUNT(DISTINCT `{{i[2]}}`) as cardinality,
 /* cardinality_breakdown */
-(select GROUP_CONCAT(__n SEPARATOR ', ') from (SELECT __n FROM `stats_f_r_{{i[1]}}_{{i[2]}}_modes` LIMIT 5) S) as modes,
+(select GROUP_CONCAT(__n SEPARATOR ', ') from (SELECT __n FROM `stats_f_r_{{i[1]}}_{{i[2]}}_modes` LIMIT {{MAX_MODES}}) S) as modes,
 (SELECT min(length(CAST(`{{i[2]}}` AS CHAR)))) as min_length, -- WARNING: problem with TEXT?
 (SELECT max(length(CAST(`{{i[2]}}` AS CHAR)))) as max_length, -- WARNING: problem with TEXT?
 (SELECT avg(length(CAST(`{{i[2]}}` AS CHAR)))) as ave_length, -- WARNING: problem with TEXT?
@@ -147,8 +151,8 @@ IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHE
 IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @upper_quartile), NULL) as numeric_upper_quartile,
 
 -- doing SUBSTRING() here as it can lead to "1260 (HY000): Row 2 was cut by GROUP_CONCAT()"
-(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f DESC, pattern LIMIT 5) S) COLLATE utf8mb4_0900_ai_ci as popular_patterns,
-(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f ASC, pattern LIMIT 5) S) COLLATE utf8mb4_0900_ai_ci as rare_patterns
+(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f DESC, pattern LIMIT {{MAX_PATTERNS}}) S) COLLATE utf8mb4_0900_ai_ci as popular_patterns,
+(SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f ASC, pattern LIMIT {{MAX_PATTERNS}}) S) COLLATE utf8mb4_0900_ai_ci as rare_patterns
 
 
 -- correlations
