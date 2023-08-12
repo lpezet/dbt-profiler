@@ -207,9 +207,9 @@ For example, for the `sakila.actor.actor_id` column, 3 CTEs are generated:
 
 The Modes CTE will simply calculate the frequency for every value. This yields at max COUNT(*) rows. The model will then take the first 5 (var `max_modes`) mostfrequent values.
 
-The Patterns will replace every character by A (or a) and digits by 9 and calculate their frequency. This might yield at most COUNT(*) rows (usually much less). The model will show the first 5 (var `max_patterns`) most populr  and least popular patterns.
+The Patterns will replace every character by A (or a) and digits by 9 and calculate their frequency. This might yield at most COUNT(*) rows (usually much less). The model will show the first 5 (var `max_patterns`) most popular  and least popular patterns.
 
-The Quartiles CTE will simply add a rown number for every record. The model will then get the record at row COUNT(*)*0.25 for 1st quartile, COUNT(*)*0.5 for 2nd quartile, and COUNT(*)*0.75 for 3rd quartile.
+The Quartiles CTE will simply add a row number for every record. The model will then get the record at row `COUNT(*)*0.25` for 1st quartile, `COUNT(*)*0.5` for 2nd quartile, and `COUNT(*)*0.75` for 3rd quartile.
 
 Note that in all cases if the field has more than 100 (var `max_char_length`) characters/digits, it will be truncated to 100 and a "..." will be concatenated to it.
 

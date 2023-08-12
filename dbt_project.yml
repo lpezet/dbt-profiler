@@ -48,4 +48,5 @@ vars:
   max_char_length: 100
   max_patterns: 5
   max_modes: 5
+  precision: 4
 

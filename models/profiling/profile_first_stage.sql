@@ -85,6 +85,7 @@ WITH
 -- SELECT second
 select
     CAST(0 AS UNSIGNED) as _is_numeric,
+    CAST(0 AS UNSIGNED) as _is_timestamp,
     CAST(0 AS UNSIGNED) as _number_of_vals,
     CAST(0 AS UNSIGNED) as _number_of_rows,
     CAST(0.0 AS DECIMAL) as _lower_quartile,
@@ -102,19 +103,23 @@ select
     0 as max_length,
     0 as ave_length,
     0 as is_numeric,
+    0 as is_timestamp,
     CAST(NULL AS DECIMAL) as numeric_min,
     CAST(NULL AS DECIMAL) as numeric_max,
-    CAST(NULL AS DECIMAL) as numberic_mean,
+    CAST(NULL AS DECIMAL) as numeric_mean,
     CAST(NULL AS DECIMAL) as numeric_std_dev,
     CAST(NULL AS DECIMAL) as numeric_lower_quartile,
     CAST(NULL AS DECIMAL) as numeric_median,
     CAST(NULL AS DECIMAL) as numeric_upper_quartile,
+    CAST(NULL AS DATETIME) as timestamp_min,
+    CAST(NULL AS DATETIME) as timestamp_max,
     '' COLLATE utf8mb4_0900_ai_ci as popular_patterns,
     '' COLLATE utf8mb4_0900_ai_ci as rare_patterns
 {%- for i in items %}
 union all
 select
 @is_numeric := (SUM(REGEXP_LIKE(`{{i[2]}}`, '^[-+]?[0-9]+(\.[0-9]+)?$')) = COUNT(*)) as _is_numeric,
+@is_timestamp := IF((SELECT pattern FROM `patterns_{{i[1]}}_{{i[2]}}` LIMIT 1) = '9999-99-99 99:99:99' AND (SELECT COUNT(*) FROM `patterns_{{i[1]}}_{{i[2]}}`) = 1, 1, 0) as _is_timestamp,
 @number_of_vals := SUM(IF(`{{i[2]}}` IS NULL OR CAST(`{{i[2]}}` AS CHAR) = '', 0, 1)) as _number_of_vals,
 @number_of_rows := COUNT(*) as _number_of_rows,
 @lower_quartile := ROUND(@number_of_rows * 0.25) as _lower_quartile,
@@ -125,14 +130,15 @@ select
 '{{i[2]}}' as col,
 CAST(@number_of_rows AS UNSIGNED) as rec_count,
 CAST(@number_of_vals as UNSIGNED) as fill_count,
-ROUND(@number_of_vals / @number_of_rows, 4) as fill_rate,
+ROUND(@number_of_vals / @number_of_rows, {{var('precision')}}) as fill_rate,
 COUNT(DISTINCT `{{i[2]}}`) as cardinality,
 /* cardinality_breakdown */
 (select GROUP_CONCAT(__n SEPARATOR ', ') from (SELECT __n FROM `stats_f_r_{{i[1]}}_{{i[2]}}_modes` LIMIT {{MAX_MODES}}) S) as modes,
 (SELECT min(length(CAST(`{{i[2]}}` AS CHAR)))) as min_length, -- WARNING: problem with TEXT?
 (SELECT max(length(CAST(`{{i[2]}}` AS CHAR)))) as max_length, -- WARNING: problem with TEXT?
-(SELECT avg(length(CAST(`{{i[2]}}` AS CHAR)))) as ave_length, -- WARNING: problem with TEXT?
+(SELECT ROUND(avg(length(CAST(`{{i[2]}}` AS CHAR))), {{var('precision')}})) as ave_length, -- WARNING: problem with TEXT?
 @is_numeric as is_numeric,
+@is_timestamp as is_timestamp,
 -- IF(@is_numeric = 1, MIN(`{{i[2]}}`), NULL) as numeric_min,
 -- IF(@is_numeric = 1, MAX(`{{i[2]}}`), NULL) as numeric_max,
 CAST(NULL AS DECIMAL(65,30)) as numeric_min,
@@ -142,13 +148,16 @@ CAST(NULL AS DECIMAL(65,30)) as numeric_max,
 -- Ideas to fix this: create other model(s) with the is_numeric flag on it.
 -- Use it as a ref here and have 2 queries: one where is_numeric = 1 and those fields are computed like commented below, one for is_numeric = 0 and just pass NULL for those fields
 CAST(NULL as DECIMAL(65, 30)) as numeric_mean,
-CAST(NULL as DECIMAL(65, 30))  as nmeric_std_dev,
+CAST(NULL as DECIMAL(65, 30))  as numeric_std_dev,
 -- IF(@is_numeric = 1, AVG({{i}}), NULL) as numeric_mean,
 -- IF(@is_numeric = 1, STDDEV_POP({{i}}), NULL) as numeric_std_dev,
 
 IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @lower_quartile), NULL) as numeric_lower_quartile,
 IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @middle), NULL) as numeric_median, -- not accurate implementation
 IF(@is_numeric = 1, (select __n from `stats_f_r_{{i[1]}}_{{i[2]}}_quartiles` WHERE __rn = @upper_quartile), NULL) as numeric_upper_quartile,
+
+CAST(NULL as DATETIME) as timestamp_min,
+CAST(NULL as DATETIME) as timestamp_max,
 
 -- doing SUBSTRING() here as it can lead to "1260 (HY000): Row 2 was cut by GROUP_CONCAT()"
 (SELECT GROUP_CONCAT(CAST(pattern AS CHAR) SEPARATOR ', ') FROM (SELECT * FROM `patterns_{{i[1]}}_{{i[2]}}` ORDER BY f DESC, pattern LIMIT {{MAX_PATTERNS}}) S) COLLATE utf8mb4_0900_ai_ci as popular_patterns,
